@@ -387,12 +387,10 @@ function checkAndAwardBadges(userId, points) {
         }
     });
 }
-const PORT = process.env.PORT||3000;
-app.listen(PORT, () => {
-    console.log("\n✅ EcoServ Advanced Server Running!");
-    console.log("👉 Open: http://localhost:3000\n");
-    console.log("Accounts:");
-    console.log("  Admin:     admin@ecoserv.com / admin123");
-    console.log("  Collector: collector1@ecoserv.com / collect123");
-    console.log("  User:      priya@demo.com / demo123\n");
+
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`✅ Server running on port ${PORT}`);
 });
+
