@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoServ - Smart Waste Management</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div id="toast-container"></div>
+
+<!-- NAV -->
+<nav id="main-nav">
+    <div class="logo" onclick="goHome()"><i data-lucide="leaf"></i> EcoServ</div>
+    <div class="nav-center" id="nav-tabs" style="display:none;"></div>
+    <div class="nav-right">
+        <div id="logged-out-menu">
+            <button onclick="showPage('login')">Login</button>
+            <button onclick="showPage('register')" class="btn-primary">Register</button>
+        </div>
+        <div id="logged-in-menu" style="display:none;">
+            <button class="icon-btn" id="theme-toggle" onclick="toggleTheme()"><i data-lucide="moon"></i></button>
+            <button class="icon-btn notif-btn" onclick="toggleNotifications()">
+                <i data-lucide="bell"></i>
+                <span id="notif-badge" class="notif-badge" style="display:none;">0</span>
+            </button>
+            <div class="user-chip" onclick="showPage('profile')">
+                <div id="user-avatar" class="avatar-sm">?</div>
+                <span id="user-email-display"></span>
+                <span id="role-pill" class="role-pill"></span>
+            </div>
+            <button onclick="logout()" class="btn-ghost">Logout</button>
+        </div>
+    </div>
+</nav>
+
+<!-- NOTIFICATIONS PANEL -->
+<div id="notif-panel" class="notif-panel" style="display:none;">
+    <div class="notif-header">
+        <h4><i data-lucide="bell"></i> Notifications</h4>
+        <button onclick="markAllRead()" class="btn-ghost-sm">Mark all read</button>
+    </div>
+    <div id="notif-list" class="notif-list"></div>
+</div>
+<div id="notif-overlay" onclick="closeNotifications()" style="display:none;position:fixed;inset:0;z-index:149;"></div>
+
+<div id="app-container">
+
+    <!-- HOME PAGE -->
+    <div id="page-home" class="page">
+        <div class="hero">
+            <div class="hero-badge">🌿 AI-Powered Waste Management</div>
+            <h1>Manage Waste.<br><span class="gradient-text">Save Tomorrow.</span></h1>
+            <p>Smart, on-demand recycling with real-time tracking, AI assistance, and eco rewards.</p>
+            <div class="hero-cta">
+                <button onclick="showPage('login')" class="btn-large btn-primary">Get Started Free</button>
+                <button onclick="showPage('leaderboard')" class="btn-large btn-ghost-large">🏆 Leaderboard</button>
+            </div>
+            <div class="hero-stats">
+                <div class="h-stat"><span id="hs-users">—</span><label>Eco Warriors</label></div>
+                <div class="h-stat"><span id="hs-kg">—</span><label>kg Recycled</label></div>
+                <div class="h-stat"><span id="hs-pts">—</span><label>Points Awarded</label></div>
+            </div>
+            <div class="landing-ai-grid">
+                <div class="ai-demo-card">
+                    <h3>✨ AI Smart Sort</h3>
+                    <p>Not sure how to dispose of something? Ask our AI instantly.</p>
+                    <div class="ai-search-box">
+                        <input type="text" id="demo-ai-input" placeholder="e.g., Old batteries, Pizza box...">
+                        <button onclick="runDemoAI()" class="btn-purple">Ask</button>
+                    </div>
+                    <p id="demo-ai-result" class="ai-demo-result"></p>
+                </div>
+                <div class="ai-fact-card">
+                    <h3>🌍 AI Eco-Fact</h3>
+                    <p id="ai-daily-fact" class="fact-text">Connecting to AI...</p>
+                    <button onclick="fetchDailyFact()" class="btn-outline-small">🔄 New Fact</button>
+                </div>
+            </div>
+            <div class="accounts-hint">
+                <div class="hint-row"><span class="hint-role admin-role">Admin</span> admin@ecoserv.com / admin123</div>
+                <div class="hint-row"><span class="hint-role collector-role">Collector</span> collector1@ecoserv.com / collect123</div>
+                <div class="hint-row"><span class="hint-role user-role">User</span> priya@demo.com / demo123</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AUTH PAGE -->
+    <div id="page-auth" class="page" style="display:none;">
+        <div class="auth-box">
+            <div class="auth-logo"><i data-lucide="leaf"></i></div>
+            <h2 id="auth-title">Welcome back</h2>
+            <p id="auth-subtitle" class="auth-sub">Sign in to your EcoServ account</p>
+            <input type="email" id="auth-email" placeholder="Email Address">
+            <input type="password" id="auth-pass" placeholder="Password">
+            <button onclick="handleAuth()" class="btn-block btn-primary" id="auth-btn">Login</button>
+            <p id="auth-toggle" onclick="toggleAuthMode()">Need an account? <b>Register</b></p>
+            <p id="auth-error" class="error-msg"></p>
+        </div>
+    </div>
+
+    <!-- USER DASHBOARD -->
+    <div id="page-dashboard" class="page" style="display:none;">
+        <div class="page-header">
+            <div>
+                <h2 id="dash-greeting">My Dashboard</h2>
+                <p class="page-sub">Track your eco journey and schedule pickups.</p>
+            </div>
+            <div class="actions">
+                <button onclick="openAI()" class="btn-purple"><i data-lucide="sparkles"></i> AI Smart Sort</button>
+                <button onclick="openModal()" class="btn-primary"><i data-lucide="plus"></i> New Pickup</button>
+            </div>
+        </div>
+        <div class="eco-points-bar">
+            <div class="points-left">
+                <div id="dash-avatar" class="avatar-lg">?</div>
+                <div>
+                    <div class="level-label">Level <span id="dash-level">1</span> Eco Warrior</div>
+                    <div class="points-val"><span id="dash-points">0</span> eco points</div>
+                    <div class="xp-bar-wrap"><div class="xp-bar" id="xp-bar" style="width:5%"></div></div>
+                </div>
+            </div>
+            <div class="badges-row" id="dash-badges"></div>
+        </div>
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="stat-icon pending-icon"><i data-lucide="clock"></i></div>
+                <span>Pending Pickups</span><h3 id="stat-pending">0</h3>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon progress-icon"><i data-lucide="truck"></i></div>
+                <span>In Progress</span><h3 id="stat-progress">0</h3>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon recycled-icon"><i data-lucide="recycle"></i></div>
+                <span>Total Recycled (kg)</span><h3 id="stat-recycled">0</h3>
+            </div>
+        </div>
+        <div class="impact-box">
+            <div>
+                <h3>🌍 AI Impact Report</h3>
+                <p id="impact-text">Click to see your real environmental impact!</p>
+            </div>
+            <button onclick="generateReport()" class="btn-primary">Generate Report</button>
+        </div>
+        <div class="list-toolbar">
+            <h3>My Requests</h3>
+            <div class="toolbar-right">
+                <div class="search-wrap"><i data-lucide="search"></i>
+                    <input type="text" id="search-input" placeholder="Search..." oninput="filterRequests()">
+                </div>
+                <select id="filter-status" onchange="filterRequests()">
+                    <option value="">All Status</option>
+                    <option>Pending</option><option>Scheduled</option>
+                    <option>Collected</option><option>Recycled</option>
+                </select>
+                <button onclick="exportUserCSV()" class="btn-ghost-sm"><i data-lucide="download"></i> Export</button>
+            </div>
+        </div>
+        <div id="requests-list" class="list-container"></div>
+    </div>
+
+    <!-- ADMIN DASHBOARD -->
+    <div id="page-admin" class="page" style="display:none;">
+        <div class="page-header">
+            <div>
+                <h2>⚙️ Admin Console</h2>
+                <p class="page-sub">Full platform control — users, requests, collectors, analytics.</p>
+            </div>
+            <div class="actions">
+                <button onclick="exportAdminCSV()" class="btn-ghost-sm"><i data-lucide="download"></i> Export CSV</button>
+                <button onclick="loadRequests()" class="btn-outline"><i data-lucide="refresh-cw"></i> Refresh</button>
+            </div>
+        </div>
+
+        <!-- Admin Tabs -->
+        <div class="admin-tabs">
+            <button class="admin-tab active" onclick="switchAdminTab('requests')"><i data-lucide="package"></i> Requests</button>
+            <button class="admin-tab" onclick="switchAdminTab('users')"><i data-lucide="users"></i> User Management</button>
+            <button class="admin-tab" onclick="switchAdminTab('collectors')"><i data-lucide="truck"></i> Collectors</button>
+        </div>
+
+        <!-- Tab: Requests -->
+        <div id="admin-tab-requests">
+            <div class="admin-stats-row">
+                <div class="stat-card"><div class="stat-icon"><i data-lucide="package"></i></div><span>Total Requests</span><h3 id="admin-total">0</h3></div>
+                <div class="stat-card"><div class="stat-icon pending-icon"><i data-lucide="clock"></i></div><span>Pending</span><h3 id="admin-pending">0</h3></div>
+                <div class="stat-card"><div class="stat-icon recycled-icon"><i data-lucide="recycle"></i></div><span>Recycled Today</span><h3 id="admin-recycled-today">0</h3></div>
+                <div class="stat-card"><div class="stat-icon progress-icon"><i data-lucide="trending-up"></i></div><span>Total Weight (kg)</span><h3 id="admin-weight">0</h3></div>
+            </div>
+            <div class="admin-grid">
+                <div class="chart-box"><canvas id="wasteChart"></canvas></div>
+                <div class="chart-box"><canvas id="statusChart"></canvas></div>
+            </div>
+            <div class="list-toolbar">
+                <h3>All Requests</h3>
+                <div class="toolbar-right">
+                    <div class="search-wrap"><i data-lucide="search"></i>
+                        <input type="text" id="admin-search" placeholder="Search user or type..." oninput="filterAdminTable()">
+                    </div>
+                    <select id="admin-filter-status" onchange="filterAdminTable()">
+                        <option value="">All Status</option>
+                        <option>Pending</option><option>Scheduled</option>
+                        <option>Collected</option><option>Recycled</option>
+                    </select>
+                </div>
+            </div>
+            <table class="admin-table">
+                <thead><tr><th>Date</th><th>User</th><th>Type</th><th>Weight</th><th>Address</th><th>Assign Collector</th><th>Status</th><th>Action</th></tr></thead>
+                <tbody id="admin-table-body"></tbody>
+            </table>
+        </div>
+
+        <!-- Tab: User Management -->
+        <div id="admin-tab-users" style="display:none;">
+            <div class="list-toolbar">
+                <h3>All Users</h3>
+                <div class="toolbar-right">
+                    <div class="search-wrap"><i data-lucide="search"></i>
+                        <input type="text" id="user-search" placeholder="Search users..." oninput="filterUserTable()">
+                    </div>
+                    <select id="user-role-filter" onchange="filterUserTable()">
+                        <option value="">All Roles</option>
+                        <option>user</option><option>collector</option><option>admin</option>
+                    </select>
+                </div>
+            </div>
+            <table class="admin-table" id="users-table">
+                <thead><tr><th>User</th><th>Email</th><th>Role</th><th>Points</th><th>Requests</th><th>Joined</th><th>Status</th><th>Action</th></tr></thead>
+                <tbody id="users-table-body"></tbody>
+            </table>
+        </div>
+
+        <!-- Tab: Collectors Overview -->
+        <div id="admin-tab-collectors" style="display:none;">
+            <div id="collectors-overview" class="collectors-grid"></div>
+        </div>
+    </div>
+
+    <!-- COLLECTOR CONSOLE -->
+    <div id="page-collector" class="page" style="display:none;">
+        <div class="page-header">
+            <div>
+                <h2>🚚 Collector Console</h2>
+                <p class="page-sub">Manage your assigned pickups and update collection status.</p>
+            </div>
+        </div>
+
+        <div class="collector-stats-row">
+            <div class="cstat-card blue-stat">
+                <div class="cstat-icon"><i data-lucide="package"></i></div>
+                <div><span>Assigned</span><h3 id="c-total">0</h3></div>
+            </div>
+            <div class="cstat-card amber-stat">
+                <div class="cstat-icon"><i data-lucide="clock"></i></div>
+                <div><span>Scheduled</span><h3 id="c-scheduled">0</h3></div>
+            </div>
+            <div class="cstat-card green-stat">
+                <div class="cstat-icon"><i data-lucide="check-circle"></i></div>
+                <div><span>Collected</span><h3 id="c-collected">0</h3></div>
+            </div>
+            <div class="cstat-card teal-stat">
+                <div class="cstat-icon"><i data-lucide="recycle"></i></div>
+                <div><span>Total kg</span><h3 id="c-kg">0</h3></div>
+            </div>
+        </div>
+
+        <!-- Filter bar -->
+        <div class="list-toolbar">
+            <h3>My Assignments</h3>
+            <div class="toolbar-right">
+                <div class="search-wrap"><i data-lucide="search"></i>
+                    <input type="text" id="col-search" placeholder="Search pickups..." oninput="filterCollectorList()">
+                </div>
+                <select id="col-filter" onchange="filterCollectorList()">
+                    <option value="">All Status</option>
+                    <option>Scheduled</option><option>Collected</option><option>Recycled</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="collector-list" class="list-container"></div>
+    </div>
+
+    <!-- ANALYTICS PAGE -->
+    <div id="page-analytics" class="page" style="display:none;">
+        <div class="page-header">
+            <div><h2>Analytics</h2><p class="page-sub">Recycling trends and environmental impact over time.</p></div>
+        </div>
+        <div class="analytics-grid">
+            <div class="chart-card full-width"><h4>Monthly Recycling Trend</h4><canvas id="monthlyChart"></canvas></div>
+            <div class="chart-card"><h4>Waste by Type</h4><canvas id="typeChart"></canvas></div>
+            <div class="chart-card"><h4>Status Breakdown</h4><canvas id="analyticStatusChart"></canvas></div>
+        </div>
+        <div class="activity-section">
+            <h4>Recent Activity</h4>
+            <div id="activity-log" class="activity-log"></div>
+        </div>
+    </div>
+
+    <!-- LEADERBOARD PAGE -->
+    <div id="page-leaderboard" class="page" style="display:none;">
+        <div class="page-header">
+            <div><h2>🏆 Eco Leaderboard</h2><p class="page-sub">Top recyclers making a difference. Earn points by completing pickups!</p></div>
+        </div>
+        <div id="leaderboard-list" class="leaderboard-list"></div>
+    </div>
+
+    <!-- PROFILE PAGE -->
+    <div id="page-profile" class="page" style="display:none;">
+        <div class="page-header">
+            <div><h2>My Profile</h2><p class="page-sub">Manage your account and achievements.</p></div>
+            <button onclick="history.back()" class="btn-outline"><i data-lucide="arrow-left"></i> Back</button>
+        </div>
+        <div class="profile-grid">
+            <div class="profile-card">
+                <div id="profile-avatar" class="avatar-xl">?</div>
+                <h3 id="profile-name">Loading...</h3>
+                <p id="profile-email-display" class="text-light"></p>
+                <div class="profile-level-badge" id="profile-level-badge">Level 1</div>
+                <div class="profile-points"><span id="profile-points">0</span> eco points</div>
+                <p class="text-light small">Member since <span id="profile-since"></span></p>
+            </div>
+            <div class="profile-details">
+                <div class="detail-section">
+                    <h4>Edit Profile</h4>
+                    <label>Full Name</label>
+                    <input type="text" id="profile-fullname" placeholder="Your full name">
+                    <label>Phone</label>
+                    <input type="text" id="profile-phone" placeholder="Your phone number">
+                    <button onclick="saveProfile()" class="btn-primary">Save Changes</button>
+                </div>
+                <div class="detail-section">
+                    <h4>🏅 Your Badges</h4>
+                    <div id="profile-badges" class="badges-grid"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div><!-- end app-container -->
+
+<!-- MODAL: New Request -->
+<div id="modal-request" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Schedule Pickup</h3>
+            <button onclick="closeModal()" class="icon-btn"><i data-lucide="x"></i></button>
+        </div>
+        <label>Waste Type</label>
+        <select id="req-type" onchange="suggestSchedule(); updatePointsPreview()">
+            <option>Plastic</option><option>Paper</option><option>Metal</option>
+            <option>Glass</option><option>E-Waste</option>
+        </select>
+        <label>Weight (kg)</label>
+        <input type="number" id="req-weight" value="1" min="1" oninput="updatePointsPreview()">
+        <label>Pickup Date</label>
+        <input type="date" id="req-date">
+        <label>Address</label>
+        <textarea id="req-address" placeholder="Enter your full address"></textarea>
+        <label>Additional Notes (optional)</label>
+        <input type="text" id="req-notes" placeholder="e.g., leave at gate">
+        <div id="ai-schedule-tip" class="ai-tip" style="display:none;"></div>
+        <div class="points-preview">✨ You'll earn <b id="pts-preview-val">15</b> eco points!</div>
+        <div class="modal-actions">
+            <button onclick="closeModal()" class="btn-ghost-sm">Cancel</button>
+            <button onclick="submitRequest()" class="btn-primary">Confirm Pickup</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: AI Smart Sort -->
+<div id="modal-ai" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>✨ AI Smart Sort</h3>
+            <button onclick="closeAI()" class="icon-btn"><i data-lucide="x"></i></button>
+        </div>
+        <p>Ask AI how to recycle or dispose of any item.</p>
+        <input type="text" id="ai-input" placeholder="e.g. Broken laptop, paint cans...">
+        <button onclick="askAI()" class="btn-purple" style="width:100%;margin-bottom:0;">Ask AI</button>
+        <p id="ai-result" class="ai-result-text"></p>
+    </div>
+</div>
+
+<!-- MODAL: Live Tracker -->
+<div id="modal-tracker" class="modal">
+    <div class="modal-content text-center">
+        <div class="modal-header">
+            <h3>🚚 Live Tracker</h3>
+            <button onclick="closeTracker()" class="icon-btn"><i data-lucide="x"></i></button>
+        </div>
+        <p>Order ID: <b id="track-id">#000</b></p>
+        <p id="track-collector" class="track-collector-label"></p>
+        <div class="tracking-timeline">
+            <div class="track-step" id="step-Pending"><div class="icon">📝</div><p>Request Received</p></div>
+            <div class="track-step" id="step-Scheduled"><div class="icon">📅</div><p>Pickup Scheduled</p></div>
+            <div class="track-step" id="step-Collected"><div class="icon">🚚</div><p>En Route / Collected</p></div>
+            <div class="track-step" id="step-Recycled"><div class="icon">♻️</div><p>Successfully Recycled</p></div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: Collector Pickup Detail -->
+<div id="modal-pickup-detail" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>📦 Pickup Details</h3>
+            <button onclick="closePickupDetail()" class="icon-btn"><i data-lucide="x"></i></button>
+        </div>
+        <div id="pickup-detail-body"></div>
+        <div class="modal-actions" id="pickup-detail-actions"></div>
+    </div>
+</div>
+
+<!-- AI CHATBOT FAB -->
+<div id="chatbot-fab" class="chatbot-fab" onclick="toggleChatbot()">
+    <i data-lucide="message-circle"></i>
+</div>
+<div id="chatbot-panel" class="chatbot-panel" style="display:none;">
+    <div class="chatbot-header">
+        <div class="chatbot-title">
+            <div class="bot-avatar">🌿</div>
+            <div><b>EcoBot</b><span class="online-dot">● Online</span></div>
+        </div>
+        <button onclick="toggleChatbot()" class="icon-btn"><i data-lucide="x"></i></button>
+    </div>
+    <div id="chatbot-messages" class="chatbot-messages">
+        <div class="chat-msg bot">👋 Hi! I'm EcoBot. Ask me anything about recycling or eco-friendly living!</div>
+    </div>
+    <div class="chatbot-input-row">
+        <input type="text" id="chat-input" placeholder="Ask EcoBot..." onkeypress="if(event.key==='Enter') sendChat()">
+        <button onclick="sendChat()" class="btn-purple"><i data-lucide="send"></i></button>
+    </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
