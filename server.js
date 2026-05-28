@@ -10,7 +10,8 @@ app.use(bodyParser.json());
 app.use(express.static(__dirname));
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 
-const GEMINI_API_KEY = "AIzaSyCecXbxJ2sSxo1r7zBEdW31eUpAKiDU4G0";
+
+const GEMINI_API_KEY = process.env.AIzaSyCecXbxJ2sSxo1r7zBEdW31eUpAKiDU4G0;
 
 /*var db = mysql.createPool({
     host: 'localhost', user: 'root',
