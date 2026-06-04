@@ -16,7 +16,7 @@ app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 // CONFIG — all values come from environment
 // =============================================
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
-const GROQ_MODEL   = process.env.GROQ_MODEL || 'llama3-8b-8192';
+const GROQ_MODEL   = process.env.GROQ_MODEL || 'llama-3.1-8b-instant';
 
 if (!GROQ_API_KEY) {
     console.warn('⚠️  GROQ_API_KEY is not set — AI features will return fallback responses.');
