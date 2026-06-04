@@ -359,26 +359,26 @@ app.get('/api/badges/:userId', (req, res) => {
 // =============================================
 // AI — GROQ
 // =============================================
-async function callGroq(prompt) {
+async function callGroq(messages) {
     if (!GROQ_API_KEY) throw new Error('GROQ_API_KEY not configured');
 
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method : 'POST',
+        method: 'POST',
         headers: {
-            'Content-Type' : 'application/json',
-            'Authorization': `Bearer ${GROQ_API_KEY}`,
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + GROQ_API_KEY,
         },
         body: JSON.stringify({
-            model   : GROQ_MODEL,
-            messages: [{ role: 'user', content: prompt }],
-            max_tokens       : 256,
-            temperature      : 0.7,
+            model: GROQ_MODEL,
+            messages: messages,
+            max_tokens: 256,
+            temperature: 0.7,
         }),
     });
 
     if (!response.ok) {
         const errText = await response.text();
-        throw new Error(`Groq API error ${response.status}: ${errText}`);
+        throw new Error('Groq error ' + response.status + ': ' + errText);
     }
 
     const data = await response.json();
@@ -389,33 +389,32 @@ app.post('/api/ai/sort', async (req, res) => {
     try {
         const { item } = req.body || {};
         if (!item) return res.status(400).json({ answer: 'Please provide an item.' });
-        const answer = await callGroq(`In 1 short sentence, how to recycle or dispose of: ${item}`);
+        const answer = await callGroq([{ role: 'user', content: 'In 1 short sentence, how to recycle or dispose of: ' + item }]);
         res.json({ answer });
     } catch (err) {
         console.error('AI /sort error:', err.message);
-        res.status(500).json({ answer: 'AI is temporarily unavailable. Please try again later.' });
+        res.status(500).json({ answer: 'AI Error: ' + err.message });
     }
 });
 
 app.get('/api/ai/fact', async (req, res) => {
     try {
-        const fact = await callGroq('Give one fascinating fun fact about recycling or the environment in one short sentence. No markdown, no bullet points.');
+        const fact = await callGroq([{ role: 'user', content: 'Give one fun fact about recycling in one short sentence. No markdown.' }]);
         res.json({ fact });
     } catch (err) {
         console.error('AI /fact error:', err.message);
-        res.json({ fact: 'Recycling 1 ton of paper saves 17 trees and 7,000 gallons of water!' });
+        res.status(500).json({ fact: 'AI Error: ' + err.message });
     }
 });
 
 app.post('/api/ai/impact', async (req, res) => {
     try {
         const { weight } = req.body || {};
-        if (!weight) return res.status(400).json({ answer: 'Please provide weight.' });
-        const answer = await callGroq(`User recycled ${weight}kg of waste. Tell them in 1 fun sentence what positive environmental impact they made (mention trees saved, CO2 reduced, or energy conserved).`);
+        const answer = await callGroq([{ role: 'user', content: 'User recycled ' + weight + 'kg. Tell them in 1 fun sentence what environmental impact they made.' }]);
         res.json({ answer });
     } catch (err) {
         console.error('AI /impact error:', err.message);
-        res.status(500).json({ answer: 'AI is temporarily unavailable. Please try again later.' });
+        res.status(500).json({ answer: 'AI Error: ' + err.message });
     }
 });
 
@@ -423,56 +422,30 @@ app.post('/api/ai/chat', async (req, res) => {
     try {
         const { message, history } = req.body || {};
         if (!message) return res.status(400).json({ answer: 'Message is required.' });
-
         const messages = [
-            {
-                role: 'system',
-                content: 'You are EcoBot, a friendly AI assistant for EcoServ waste management. Help with recycling tips, eco advice, and waste disposal. Keep responses concise (2-3 sentences). Be encouraging and use eco-themed emojis occasionally.'
-            },
+            { role: 'system', content: 'You are EcoBot, a friendly assistant for EcoServ waste management. Help with recycling tips. Keep responses to 2-3 sentences. Use eco emojis.' },
             ...(history || []).slice(-6).map(h => ({
                 role: h.role === 'EcoBot' ? 'assistant' : 'user',
                 content: h.content
             })),
             { role: 'user', content: message }
         ];
-
-        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${GROQ_API_KEY}`,
-            },
-            body: JSON.stringify({
-                model: GROQ_MODEL,
-                messages: messages,
-                max_tokens: 256,
-                temperature: 0.7,
-            }),
-        });
-
-        if (!response.ok) {
-            const errText = await response.text();
-            throw new Error(`Groq API error ${response.status}: ${errText}`);
-        }
-
-        const data = await response.json();
-        const answer = data.choices[0].message.content.trim();
+        const answer = await callGroq(messages);
         res.json({ answer });
     } catch (err) {
         console.error('AI /chat error:', err.message);
-        res.status(500).json({ answer: "I'm having trouble connecting right now. Please try again shortly!" });
+        res.status(500).json({ answer: 'AI Error: ' + err.message });
     }
 });
 
 app.post('/api/ai/schedule', async (req, res) => {
     try {
         const { wasteType, weight } = req.body || {};
-        if (!wasteType || !weight) return res.status(400).json({ suggestion: 'Please provide waste type and weight.' });
-        const suggestion = await callGroq(`For ${weight}kg of ${wasteType} waste, suggest the best day and time for pickup, plus one preparation tip, in 2 sentences.`);
+        const suggestion = await callGroq([{ role: 'user', content: 'For ' + weight + 'kg of ' + wasteType + ' waste, suggest best pickup day and 1 preparation tip in 2 sentences.' }]);
         res.json({ suggestion });
     } catch (err) {
         console.error('AI /schedule error:', err.message);
-        res.status(500).json({ suggestion: 'Weekday mornings are best for pickup. Ensure waste is properly sorted and bagged before collection.' });
+        res.status(500).json({ suggestion: 'AI Error: ' + err.message });
     }
 });
 
