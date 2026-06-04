@@ -1,21 +1,25 @@
 {
-  "name": "es-project",
+  "name": "ecoserv",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "EcoServ — waste management platform with Groq AI",
+  "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "node --watch server.js",
+    "test": "echo \"No tests configured\" && exit 0"
   },
-  "keywords": [],
+  "keywords": ["recycling", "waste-management", "groq", "express", "mysql"],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "dependencies": {
-    "body-parser": "^2.2.1",
+    "body-parser": "^1.20.3",
     "cors": "^2.8.5",
-    "express": "^5.1.0",
-    "groq-sdk": "^1.2.1",
+    "express": "^4.21.2",
+    "groq-sdk": "^0.9.1",
     "mysql2": "^3.15.3"
   }
 }
