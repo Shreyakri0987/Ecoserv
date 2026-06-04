@@ -356,6 +356,37 @@ app.get('/api/badges/:userId', (req, res) => {
     });
 });
 
+
+// =============================================
+// AI — GROQ
+// =============================================
+// TEMP DEBUG ROUTE
+app.get('/api/ai/test', async (req, res) => {
+    try {
+        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + GROQ_API_KEY,
+            },
+            body: JSON.stringify({
+                model: GROQ_MODEL,
+                messages: [{ role: 'user', content: 'say hi' }],
+                max_tokens: 10,
+            }),
+        });
+        const text = await response.text();
+        res.json({ 
+            status: response.status, 
+            key_prefix: GROQ_API_KEY ? GROQ_API_KEY.substring(0, 8) + '...' : 'NOT SET',
+            model: GROQ_MODEL,
+            response: text 
+        });
+    } catch (err) {
+        res.json({ error: err.message });
+    }
+});
+
 // =============================================
 // AI — GROQ
 // =============================================
