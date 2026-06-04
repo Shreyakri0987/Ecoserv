@@ -424,12 +424,40 @@ app.post('/api/ai/chat', async (req, res) => {
         const { message, history } = req.body || {};
         if (!message) return res.status(400).json({ answer: 'Message is required.' });
 
-        const sys = `You are EcoBot, a friendly AI assistant for EcoServ waste management. Help with recycling tips, eco advice, and waste disposal. Keep responses concise (2-3 sentences). Be encouraging and use eco-themed emojis occasionally.`;
-        const historyText = (history || []).map(h => `${h.role}: ${h.content}`).join('\n');
-        const fullPrompt  = `${sys}\n\n${historyText}\n\nUser: ${message}\n\nEcoBot:`;
+        const messages = [
+            {
+                role: 'system',
+                content: 'You are EcoBot, a friendly AI assistant for EcoServ waste management. Help with recycling tips, eco advice, and waste disposal. Keep responses concise (2-3 sentences). Be encouraging and use eco-themed emojis occasionally.'
+            },
+            ...(history || []).slice(-6).map(h => ({
+                role: h.role === 'EcoBot' ? 'assistant' : 'user',
+                content: h.content
+            })),
+            { role: 'user', content: message }
+        ];
 
-        const answer = await callGroq(fullPrompt);
-        res.json({ answer: answer.replace(/^EcoBot:\s*/i, '').trim() });
+        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${GROQ_API_KEY}`,
+            },
+            body: JSON.stringify({
+                model: GROQ_MODEL,
+                messages: messages,
+                max_tokens: 256,
+                temperature: 0.7,
+            }),
+        });
+
+        if (!response.ok) {
+            const errText = await response.text();
+            throw new Error(`Groq API error ${response.status}: ${errText}`);
+        }
+
+        const data = await response.json();
+        const answer = data.choices[0].message.content.trim();
+        res.json({ answer });
     } catch (err) {
         console.error('AI /chat error:', err.message);
         res.status(500).json({ answer: "I'm having trouble connecting right now. Please try again shortly!" });
